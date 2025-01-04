@@ -8,12 +8,15 @@ A fun little implementation of some debug tools I like to use, now in convenient
 
 <img src="https://github.com/user-attachments/assets/7f4d1d7c-2143-414e-9012-73be4e7dd330" width="600">
 
+**UPDATE:** As of 01/04/2025, sequential files are now collapsed into a "line path" so `[update.lua:100][update.lua:55][update.lua:2]` becomes `[update.lua:100:55:2]`. In addition, an optional global `CANDYPATHDEPTH` has been added. See below.
+
 `debug()`,`error()`, `warn()`, and `success()` all print the passed message (including if it's a table, which they will iterate and print), and trace back the command call for as many levels as `level` is passed.
 
 The global constants used are:
   * `CANDYDEBUGMODE` : Used to activate `debug()`, `todo()`, and `remind()` to let users declutter the console space when just looking for more serious `error`s and `warn`ings
-  * `CANDYDEBUGBASELEVEL` : The default level of stacktracing that gets reported to the console. This comes in the form of `[data.lua:100][src.lua:10][main.lua:256]` that appears in errors.
+  * `CANDYDEBUGBASELEVEL` : The default level of stacktracing that gets reported to the console. This comes in the form of `[data.lua:100][src.lua:10][main.lua:256]`, where the number is the line number the command was called from.
   * `CANDYTODOEXPIRATION` : In days. `todo()` allows you to pass a date as the first entry, which gets compared with the current date using `os.time()` and, if it's been this many days or more, will give you a warning. At `days x 3` the warning goes from yellow to red.
+  * `CANDYPATHDEPTH` : if greater than 0, this will add the filepath for the filename itself, such as `[src/states/game.lua:100]` instead of simply showing `[game.lua:100]`
 
   More info on each function:
 
