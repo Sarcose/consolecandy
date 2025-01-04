@@ -1,18 +1,49 @@
-CANDYDEBUGMODE = true
-CANDYDEBUGBASELEVEL = 2   --for ccandy. console print functions, this usually means [callingfile.lua:line][datafile.lua:line]
-CANDYPATHDEPTH = 10
-CANDYTODOEXPIRATION = 5
+-- Customization options
 
---[[
-	yellow: Warning | Reminder
-	red:	Error
-	green:	Success
-	blue: 	Debug
-	cyan:	Todo
---]]
+local ccandy = {
+	colorsOff = false,
+	debugOn = true,
+	baseLevel = 2,
+	pathDepth = 1,
+	toDoExpiration = 5,
+	reminderheader = "==========!!!=======REMINDER=======!!!========",
+	reminderfooter = "=========!!!=======================!!!========",
+	toDoTab = "   ",
+	backgrounds = false,
+	tableDepthLimit = 9,
+	colors = {
+		warn = "yellow",
+		error = "red",
+		debug = "blue",
+		todo = "cyan",
+		remind = "yellow",
+		success = "green"
+	},
+	bgcolors = {
+		warn = "red",
+		error = "white",
+		debug = "yellow",
+		todo = "magenta",
+		remind = "blue",
+		success = "black"
+	},
+}
 
-local ccandy = {}
-ccandy.filename = "debugcandy"
+-- ANSI sequences
+local resetANSI = "\x1B[m"
+local consolecolors = {
+	black = "\x1b[30m",			white = "\x1b[37m",
+	red = "\x1B[31m", 			green = "\x1B[32m", 	
+	yellow = "\x1b[33m", 		blue = "\x1b[94m",
+	magenta = "\x1b[35m",		cyan = "\x1b[36m"	}		
+		
+local bgcolors = {
+	white = "\x1b[47m",				black = "\x1b[40m",
+	red = "\x1b[41m",				yellow = "\x1b[43m",	   		
+	green = "\x1b[42m",				blue = "\x1b[44m",
+	magenta = "\x1b[45m",			cyan = 	"\x1b[46m"	}
+
+-- Helper functions
 
 local function extractCallerInfo(level, parseStart)
     local stack = debug.traceback("", 2)
@@ -20,12 +51,11 @@ local function extractCallerInfo(level, parseStart)
     for line in stack:gmatch("[^\n]+") do
         table.insert(lines, line)
     end
-
     local ret = ""
     parseStart = parseStart or 4
     local lastFile = nil
     local currentRange = {}
-	local depth = CANDYPATHDEPTH
+	local depth = ccandy.pathDepth
     if level then
         for i = 1, level do
             local n = (i - 1) + parseStart
@@ -38,7 +68,6 @@ local function extractCallerInfo(level, parseStart)
                     for part in file:gmatch("[^/\\]+") do
                         table.insert(pathParts, part)
                     end
-                    
                     -- Adjust the file path based on the depth
                     if depth > 0 then
                         local startIdx = math.max(#pathParts - depth, 1)
@@ -46,10 +75,9 @@ local function extractCallerInfo(level, parseStart)
                     else
                         file = pathParts[#pathParts]  -- Only the filename
                     end
-
-                    file = string.gsub(file, "%s", "")  -- Remove spaces
+					file = string.gsub(file, "%s", "")  -- Remove spaces	--TODO: this might interfere with filenames that have spaces. Solution: don't use spaces imo
+                    file = string.gsub(file, "/", ".")  -- Replace '/' with '.'
                     local num = tonumber(line)
-
                     if lastFile == file then
                         -- Add the line number to the current range
                         table.insert(currentRange, num)
@@ -81,15 +109,14 @@ local function extractCallerInfo(level, parseStart)
     end
     return ret
 end
-
 local function getCallLine(n,level,parseStart)
-	level = level or CANDYDEBUGBASELEVEL
+	level = level or ccandy.baseLevel
 	local line = extractCallerInfo(level,parseStart)
 	return n.." "..line..": "
 end
-local limit = 9--to avoid infinite recursion
 local function getDeepest(t, refs, deep)
 	deep = deep or 1
+	local limit = ccandy.tableDepthLimit
 	if deep >= limit then deep = limit return deep, refs end
 	refs = refs or {}
 	refs[tostring(t)] = true
@@ -179,45 +206,6 @@ local function inspect(i, refs)
 	end
 	return t..getSpacing(nil,t)..symbol..ret
 end
-function ccandy.debug(_,level,parseStart) -- print magenta to console, takes a string or table. Only when CANDYDEBUGMODE is on.
-	if CANDYDEBUGMODE then
-		local p = getCallLine("DEBUG",level,parseStart)
-		if type(_) ~= "table" then 
-			if type(_) == "string" then
-				p = p .. _		--if it's a string we don't bother with the inspection, just print it as a message
-			else
-				p = p ..inspect(_)
-			end
-		else
-			local cap = "\r\n  "
-			if _.horizontal then 
-				cap = "|" _.horizontal = nil 
-			end
-			local longestname = 0
-			local refs = {}
-			refs[tostring(_)] = true
-			for k,v in pairs(_) do
-				if type(k) == "string" then
-					if #k > longestname then longestname = #k end
-				end
-			end
-			for i=1, #_ do
-				p = p..cap
-				p = p..getSpacing(longestname,i)..tostring(i).." : "..inspect(_[i], refs)
-			end
-			for k,v in pairs(_) do
-				if not tonumber(k) then
-					p = p..cap
-					p = p..getSpacing(longestname,k)..k.." : "..inspect(v, refs)
-				end
-			end
-			p = p:match("^(.-)[,\r\n]?$")
-		end
-		ccandy.printC("blue",p)
-	end
-end
-
-
 local function checkChecked(s)
     if string.sub(s, 1, 1) == "X" then
         -- Return the string without the "X" and true (indicating it started with "X")
@@ -251,10 +239,54 @@ local function compareDate(inputString)
     local daysPassed = math.floor(secondsPassed / (24 * 60 * 60)) -- Convert seconds to days
     return true, daysPassed
 end
-local todotab = "   "
+local function getANSI(name)	--getANSI todo is passed
+	local e = consolecolors[ccandy.colors[name]]
+	if ccandy.backgrounds then
+		e = e ..bgcolors[ccandy.bgcolors[name]]
+	end
+	return e
+end
+function ccandy.debug(_,level,parseStart) -- print magenta to console, takes a string or table. Only when debugOn is on.
+	if ccandy.debugOn then
+		local p = getCallLine("DEBUG",level,parseStart)
+		if type(_) ~= "table" then 
+			if type(_) == "string" then
+				p = p .. _		--if it's a string we don't bother with the inspection, just print it as a message
+			else
+				p = p ..inspect(_)
+			end
+		else
+			local cap = "\r\n  "
+			if _.horizontal then 
+				cap = "|" _.horizontal = nil 
+			end
+			local longestname = 0
+			local refs = {}
+			refs[tostring(_)] = true
+			for k,v in pairs(_) do
+				if type(k) == "string" then
+					if #k > longestname then longestname = #k end
+				end
+			end
+			for i=1, #_ do
+				p = p..cap
+				p = p..getSpacing(longestname,i)..tostring(i).." : "..inspect(_[i], refs)
+			end
+			for k,v in pairs(_) do
+				if not tonumber(k) then
+					p = p..cap
+					p = p..getSpacing(longestname,k)..k.." : "..inspect(v, refs)
+				end
+			end
+			p = p:match("^(.-)[,\r\n]?$")
+		end
+		ccandy.printC(getANSI("debug"),p)
+	end
+end
 function ccandy.todo(_) --ccandy.todo{"Update date","XChecked Step 1","Unchecked Step 2","Unchecked Step 3"}
 	local level = 1
-	if CANDYDEBUGMODE then
+	local todotab = ccandy.toDoTab
+	if ccandy.debugOn then
 		if type(_) ~= "table" then _ = {tostring(_)} end
 		local p1 = getCallLine("TODO",level)
 		local p2 = nil
@@ -263,14 +295,17 @@ function ccandy.todo(_) --ccandy.todo{"Update date","XChecked Step 1","Unchecked
 		local unchecked = "[ ] "
 		local checkbox = ""
 		local exTimePassed
+		local datefound,date,timePassed
 		for i=1, #_ do
 			local item = _[i]
-			local date, timePassed = compareDate(item)
+			if not dateFound then date, timePassed = compareDate(item) end
 			if date then
 				exTimePassed = timePassed
-				if timePassed >= CANDYTODOEXPIRATION then
+				if timePassed >= ccandy.toDoExpiration then
 					p2 = "     WARNING: "..tostring(timePassed).." days since this Todo list was updated!"
 				end
+				datefound = true
+				date = false
 			else
 				local s, isChecked = checkChecked(tostring(_[i]))
 				if isChecked then
@@ -292,19 +327,17 @@ function ccandy.todo(_) --ccandy.todo{"Update date","XChecked Step 1","Unchecked
 		end
 		local warncolor = nil
 		if exTimePassed then
-			if exTimePassed >= (CANDYTODOEXPIRATION * 3) then
-				warncolor = "red"
-			elseif exTimePassed >= CANDYTODOEXPIRATION then
-				warncolor = "yellow"
+			if exTimePassed >= (ccandy.toDoExpiration * 3) then
+				warncolor = getANSI("error")
+			elseif exTimePassed >= ccandy.toDoExpiration then
+				warncolor = getANSI("error")
 			end
 		end
-		ccandy.printCTable({"cyan",warncolor,"cyan"},{p1,p2,p3})
+		ccandy.printCTable({getANSI("todo"),warncolor,getANSI("todo")},{p1,p2,p3})
 	end
 end
-ccandy.reminderheader = "==========!!!=======REMINDER=======!!!========"
-ccandy.reminderfooter = "=========!!!=======================!!!========"
 function ccandy.remind(setdate,reminderdate,_)
-	if CANDYDEBUGMODE then
+	if ccandy.debugOn then
 		local date, timePassedSinceSet = compareDate(setdate)
 		assert(date,"ccandy.reminder called without setdate!")
 		date, timePassedSinceReminder = compareDate(reminderdate)
@@ -321,70 +354,82 @@ function ccandy.remind(setdate,reminderdate,_)
 						if i < #_ then
 							reminder = reminder.."\r\n"
 						end
+					elseif type(v)=="function" then
+						_[i]()
 					end
 				end
 			else
 				reminder = reminder.._
 			end
-			ccandy.printCTable("yellow",{heading,since,reminder})
-			for k,v in pairs(_) do
-				if type(v) == "function" then
-					_[k]()
+			ccandy.printCTable(ccandy.colors.warn,{heading,since,reminder})
+			if type(_) == "table" then
+				for k,v in pairs(_) do
+					if type(k) ~= "number" then
+						if type(v) == "function" then
+							_[k]()
+						end
+					end
 				end
 			end
-			ccandy.printC("yellow",post)
+			ccandy.printC(getANSI("remind"),post)
 		end
 	end
 end
-
 function ccandy.success(_,level) --print green to console, takes a string or table
 	level = level or 0	--success uses its own default, 0, because that makes sense to me
     if type(_) ~= "table" then _ = {_} end
 	local p = getCallLine("SUCCESS!",level)
-	for i=1, #_ do
-		p = p..tostring(_[i])
+	local item
+    for i=1, #_ do
+		item = _[i]
+		if type(item)=="function" then
+			item()
+		else
+			p = p..tostring(item)
+		end
 		if i < #_ then
 			p = p..", "
 		end
     end
-    ccandy.printC("green",p)
+    ccandy.printC(getANSI("success"),p)
 end
 function ccandy.warn(_,level,parseStart) --print yellow to console, takes a string or table
     if type(_) ~= "table" then _ = {_} end
 	local p = getCallLine("WARNING",level,parseStart)
-	for i=1, #_ do
-		p = p..tostring(_[i])
+    for i=1, #_ do
+		item = _[i]
+		if type(item)=="function" then
+			item()
+		else
+			p = p..tostring(item)
+		end
 		if i < #_ then
 			p = p..", "
 		end
     end
-    ccandy.printC("yellow",p)
+    ccandy.printC(getANSI("warn"),p)
 end
-function ccandy.stop(_,level) --print red to console then stop the program
-	ccandy.error(_,level,5)
+function ccandy.stop(_,level,parseStart) --print red to console then stop the program
+	parseStart = parseStart or 5
+	ccandy.error(_,level,parseStart)
 	error("Stopped by ccandy.stop()")
 end
 function ccandy.error(_,level,parseStart) --print red to console, takes a string or table
     if type(_) ~= "table" then _ = {_} end
     local p = getCallLine("ERROR",level,parseStart)
+	local item
     for i=1, #_ do
-		p = p..tostring(_[i])
+		item = _[i]
+		if type(item)=="function" then
+			item()
+		else
+			p = p..tostring(item)
+		end
 		if i < #_ then
 			p = p..", "
 		end
     end
-    ccandy.printC("red",p)
-end
-local consolecolors = 
-{reset = "\x1B[m", red = "\x1B[31m", 		--red: error
-yellow = "\x1b[33m", green = "\x1B[32m", 	--yellow: warn (looks orange)  green: good stuff like "finished loading!" probably
-blue = "\x1b[34m", cyan = "\x1b[36m"}		--blue: debug messages		cyan: TODO
-function ccandy.printC(colour, ...)
-	if not consolecolors[colour] then error("Undefined colour: " .. colour) end
-	io.write(consolecolors[colour])
-	if colour == "blue" then io.write("\x1b[1m") end
-	print(...)
-	io.write(consolecolors.reset)
+    ccandy.printC(getANSI("error"),p)
 end
 function ccandy.blank(msg,n)
 	if type(msg) == "number" then n = msg; msg = nil end
@@ -393,8 +438,22 @@ function ccandy.blank(msg,n)
 	for i=1,n do
 		p = p .. "\r\n"
 	end
-	if msg then printC("green",tostring(msg)) end
+	if msg then ccandy.printC("green",tostring(msg)) end
 	print(p)
+end
+function ccandy.printC(ANSI, ...)
+	if not ccandy.colorsOff then
+		local fg, bg = ANSI:match("([^|]+)(|([^|]+))?")
+		if not fg then fg = ANSI end
+		local c = consolecolors[fg]
+		local b = bgcolors[bg]
+		if not c then c = fg end
+		if bg and not b then b = bg end
+		io.write(c)
+	end
+	print(...)
+	io.write(resetANSI)
+	::skip::
 end
 function ccandy.printCTable(cTable, sTable)	--print a table of strings with a table of colors, used in Todo list mainly
 	local onlyColor
@@ -408,18 +467,16 @@ function ccandy.printCTable(cTable, sTable)	--print a table of strings with a ta
 		end
 	end
 end
-
-
 function ccandy:export(n)
 	n = n or "_c_"
-	local ignore = {"export","printC","printCTable"}
+	local ignore = {export=true}
 	n = n or ""
 	for k,v in pairs(self) do
-		local f = n..k
-		_G[f] = v
+		if not ignore[f] then
+			local f = n..k
+			_G[f] = v
+		end
 	end
-	_G.printC = self.printC
-	_G.printCTable = self.printCTable
 end
 
 return ccandy
