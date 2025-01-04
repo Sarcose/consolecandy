@@ -128,6 +128,7 @@ An example of `debug()` printing a table:
 
 ## ToDo
 Planned for the future
+  * Example images or code for features that don't have examples
   * Play with background settings to produce defaults that look nice.
   * Dig deeper into ANSI escape sequences to provide more shortcuts to those features.
   * Improve recursion detection by `debug()` so `tableDepthLimit` can be expanded safely (I'm not sure the lib is doing it right).
