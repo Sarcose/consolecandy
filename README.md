@@ -1,5 +1,5 @@
 # Debug Candy for Löve!
-Colored console debug and development tools with various inspection features and customizations available. Used to quickly throw relevant info about what you're working on right into the console during runtime!
+Colored console debug and development tools with various inspection features and customizations available. Its purpose is to quickly throw relevant info about what you're working on right into the console during runtime!
 
 <img src="https://github.com/user-attachments/assets/7f4d1d7c-2143-414e-9012-73be4e7dd330" width="500">
 
