@@ -47,7 +47,7 @@ Last updated 01/04/2025
     * Prints blank newlines to the console, with an optional message. Can be called as `blank()`, `blank(lines)`, or `blank(msg,lines)`. If `lines` is empty, will default to 10 newlines.
 * Helper functions that can be used directly:   
   * `printC(ANSI, ...)`
-    * Where ANSI is either an ansi code or a string of color names. It can accept two formats of color string: `"yellow"` will make the text color (FG) yellow, while `"yellow|blue"` will make the FG yellow and the BG blue. The library uses this function internally passing direct ANSI escape codes constructed at the time the other tools are called, but this function is also available for direct access.
+    * Where `ANSI` is either an ansi code or a string of color names, and `...` must be a string. It can accept two formats of color string: `"yellow"` will make the text color (FG) yellow, while `"yellow|blue"` will make the FG yellow and the BG blue. The library uses this function internally passing direct ANSI escape codes constructed at the time the other tools are called, but this function is also available for direct access.
   * `printCTable(cTable, sTable)`
     * Calls `printC` in sequence according to the index values of `sTable`, matching them with the corresponding indices in `cTable`. If you pass a string for the first argument it will use that for every call, instead.
 
