@@ -27,7 +27,7 @@ Last updated 01/04/2025
   * New Customizations! All globals are now local to the library now too. (see [Customizations](#Customizations) )
   * New Optional argument: `parseStart` that modifies how many lines of the stacktrace are ignored
   * Most commands can now call a function if they find them in the `msg` (or `reminderList`) table. See [Example 2](#Examples) for an example of how to do this.
-  * backgrounds are now an option, although I have yet to play around with them to figure out what looks good as defaults. The default bgs are eyesores, so they are turned off by default.
+  * Background colors are now an option, although I have yet to play around with them to figure out what looks good as defaults. The default bgs I set are eyesores, so they are turned off by default.
 
 ## Functions
   * `debug(msg,level,parseStart)`
