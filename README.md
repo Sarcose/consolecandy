@@ -1,5 +1,5 @@
-# Debug Candy!
-A fun little implementation of some debug tools I like to use, now in convenient library form!
+# Debug Candy for Löve!
+Colored debug and dev-helper console tools with various inspection features and customizations available
 
 <img src="https://github.com/user-attachments/assets/7f4d1d7c-2143-414e-9012-73be4e7dd330" width="500">
 
