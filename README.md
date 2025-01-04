@@ -75,7 +75,7 @@ All of these have default values that produce the results you see in the screens
         * `todo = "cyan"`
         * `remind = "yellow"`
         * `success = "green"`
-      * `ccandy.bgcolors` : Only used if `ccandy.backgrounds` is on. These are off by default. Set to nil or "" to turn off individual ones instead.
+      * `ccandy.bgcolors` : Only used if `ccandy.backgrounds` is on. These are off by default. Set to nil or "" to turn off individual ones instead. *NOTE*: These defaults are probably eyesores. Your dev is actually partially colorblind, so matching colors is not my strong suit. I do not use backgrounds. As a personal recommendation, background colors with plain white or black text looks nice though, so probably tweak both if you're going to turn backgrounds on.
         * `warn = "red"`
         * `error = "white"`
         * `debug = "magenta"`
