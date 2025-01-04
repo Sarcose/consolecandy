@@ -82,8 +82,6 @@ All of these have default values that produce the results you see in the screens
         * `todo = "cyan"`
         * `remind = "yellow"`
         * `success = "green"`
-       
-        * 
 ## Examples
 
 ### Example 1.
