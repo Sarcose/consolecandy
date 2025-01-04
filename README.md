@@ -45,6 +45,11 @@ Last updated 01/04/2025
     * **<code style="color : yellow">Default Yellow</code>**. Like `todo{}` it uses `os.time()` to check the dates. Checks against `remindDate` and, if that date has passed, will print how many days it's been since `setDate` and then print the **indiced items of** `reminderList`. Will call both indiced and non-indiced functions, first calling the indiced ones then the non-indiced ones. It also prints a visually distinct header and footer, which can be set per [Customization](#Customization) below.
   * `blank(msg,lines)`
     * Prints blank newlines to the console, with an optional message. Can be called as `blank()`, `blank(lines)`, or `blank(msg,lines)`. If `lines` is empty, will default to 10 newlines.
+* Helper functions that can be used directly:   
+  * `printC(ANSI, ...)`
+    * Where ANSI is either an ansi code or a string of color names. It can accept two formats of color string: `"yellow"` will make the text color (FG) yellow, while `"yellow|blue"` will make the FG yellow and the BG blue. The library uses this function internally passing direct ANSI escape codes constructed at the time the other tools are called, but this function is also available for direct access.
+  * `printCTable(cTable, sTable)`
+    * Calls `printC` in sequence according to the index values of `sTable`, matching them with the corresponding indices in `cTable`. If you pass a string for the first argument it will use that for every call, instead.
 
 ## Arguments
 All arguments are optional. Using any function with no arguments will result in defaults being used no message being printed.
