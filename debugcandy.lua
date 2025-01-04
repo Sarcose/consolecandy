@@ -1,6 +1,8 @@
 CANDYDEBUGMODE = true
 CANDYDEBUGBASELEVEL = 2   --for ccandy. console print functions, this usually means [callingfile.lua:line][datafile.lua:line]
+CANDYPATHDEPTH = 10
 CANDYTODOEXPIRATION = 5
+
 --[[
 	yellow: Warning | Reminder
 	red:	Error
@@ -10,38 +12,79 @@ CANDYTODOEXPIRATION = 5
 --]]
 
 local ccandy = {}
+ccandy.filename = "debugcandy"
 
-local function extractCallerInfo(level)
+local function extractCallerInfo(level, parseStart)
     local stack = debug.traceback("", 2)
     local lines = {}
     for line in stack:gmatch("[^\n]+") do
         table.insert(lines, line)
-    end	--parse 4, 5, 6
-	local ret = ""
-	local parseStart = 4
-	if level then
-		for i=1, level do
-			local n = (i-1)+parseStart
-			local num
-			local callerInfo = lines[n] -- lines[4] is the filename of the debug call, abstracted through this->getCallLine->ccandy.debug()
-			if callerInfo then
-				local file, line = callerInfo:match("([^:]+):(%d+)")
-				if file and line then
-					file = file:match("([^/\\]+)$") -- Matches just the file name
-					file = string.gsub(file, "%s", "")
-					num = tonumber(line)
-				end
-				if file and num then
-					ret = ret.."["..tostring(file)..":"..tostring(num).."]"
-				end
-			end
-		end
-	end
+    end
+
+    local ret = ""
+    parseStart = parseStart or 4
+    local lastFile = nil
+    local currentRange = {}
+	local depth = CANDYPATHDEPTH
+    if level then
+        for i = 1, level do
+            local n = (i - 1) + parseStart
+            local callerInfo = lines[n]
+            if callerInfo then
+                local file, line = callerInfo:match("([^:]+):(%d+)")
+                if file and line then
+                    -- Handle the file path depth
+                    local pathParts = {}
+                    for part in file:gmatch("[^/\\]+") do
+                        table.insert(pathParts, part)
+                    end
+                    
+                    -- Adjust the file path based on the depth
+                    if depth > 0 then
+                        local startIdx = math.max(#pathParts - depth, 1)
+                        file = table.concat({unpack(pathParts, startIdx)}, "/")
+                    else
+                        file = pathParts[#pathParts]  -- Only the filename
+                    end
+
+                    file = string.gsub(file, "%s", "")  -- Remove spaces
+                    local num = tonumber(line)
+
+                    if lastFile == file then
+                        -- Add the line number to the current range
+                        table.insert(currentRange, num)
+                    else
+                        -- If there is a previous range, collapse it
+                        if #currentRange > 0 then
+                            if #currentRange > 1 then
+                                ret = ret .. "[" .. lastFile .. ":" .. table.concat(currentRange, ":") .. "]"
+                            else
+                                ret = ret .. "[" .. lastFile .. ":" .. currentRange[1] .. "]"
+                            end
+                        end
+                        -- Start a new range for the new file
+                        lastFile = file
+                        currentRange = {num}
+                    end
+                end
+            end
+        end
+
+        -- Handle the last range (if any)
+        if #currentRange > 0 then
+            if #currentRange > 1 then
+                ret = ret .. "[" .. lastFile .. ":" .. table.concat(currentRange, ":") .. "]"
+            else
+                ret = ret .. "[" .. lastFile .. ":" .. currentRange[1] .. "]"
+            end
+        end
+    end
     return ret
 end
-local function getCallLine(n,level)
+
+local function getCallLine(n,level,parseStart)
 	level = level or CANDYDEBUGBASELEVEL
-	local line = extractCallerInfo(level)
+	local line = extractCallerInfo(level,parseStart)
 	return n.." "..line..": "
 end
 local limit = 9--to avoid infinite recursion
@@ -136,9 +179,9 @@ local function inspect(i, refs)
 	end
 	return t..getSpacing(nil,t)..symbol..ret
 end
-function ccandy.debug(_,level) -- print magenta to console, takes a string or table. Only when CANDYDEBUGMODE is on.
+function ccandy.debug(_,level,parseStart) -- print magenta to console, takes a string or table. Only when CANDYDEBUGMODE is on.
 	if CANDYDEBUGMODE then
-		local p = getCallLine("DEBUG",level)
+		local p = getCallLine("DEBUG",level,parseStart)
 		if type(_) ~= "table" then 
 			if type(_) == "string" then
 				p = p .. _		--if it's a string we don't bother with the inspection, just print it as a message
@@ -266,7 +309,7 @@ function ccandy.remind(setdate,reminderdate,_)
 		assert(date,"ccandy.reminder called without setdate!")
 		date, timePassedSinceReminder = compareDate(reminderdate)
 		assert(date,"ccandy.reminder called without reminderdate!")
-		if timePassedSinceReminder > 0 then
+		if timePassedSinceReminder >= 0 then
 			local heading = ccandy.reminderheader
 			local since = "A reminder was set on "..setdate.." "..timePassedSinceSet.." days ago!"
 			local reminder = ""
@@ -306,9 +349,9 @@ function ccandy.success(_,level) --print green to console, takes a string or tab
     end
     ccandy.printC("green",p)
 end
-function ccandy.warn(_,level) --print yellow to console, takes a string or table
+function ccandy.warn(_,level,parseStart) --print yellow to console, takes a string or table
     if type(_) ~= "table" then _ = {_} end
-	local p = getCallLine("WARNING",level)
+	local p = getCallLine("WARNING",level,parseStart)
 	for i=1, #_ do
 		p = p..tostring(_[i])
 		if i < #_ then
@@ -318,12 +361,12 @@ function ccandy.warn(_,level) --print yellow to console, takes a string or table
     ccandy.printC("yellow",p)
 end
 function ccandy.stop(_,level) --print red to console then stop the program
-	ccandy.error(_,level)
-	error("See console output. Stacktrace:")
+	ccandy.error(_,level,5)
+	error("Stopped by ccandy.stop()")
 end
-function ccandy.error(_,level) --print red to console, takes a string or table
+function ccandy.error(_,level,parseStart) --print red to console, takes a string or table
     if type(_) ~= "table" then _ = {_} end
-    local p = getCallLine("ERROR",level)
+    local p = getCallLine("ERROR",level,parseStart)
     for i=1, #_ do
 		p = p..tostring(_[i])
 		if i < #_ then
