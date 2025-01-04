@@ -9,7 +9,7 @@ local ccandy = {
 	reminderheader = "==========!!!=======REMINDER=======!!!========",
 	reminderfooter = "=========!!!=======================!!!========",
 	toDoTab = "   ",
-	backgrounds = false,
+	backgrounds = true,
 	tableDepthLimit = 9,
 	colors = {
 		warn = "yellow",
@@ -443,12 +443,13 @@ function ccandy.blank(msg,n)
 end
 function ccandy.printC(ANSI, ...)
 	if not ccandy.colorsOff then
-		local fg, bg = ANSI:match("([^|]+)(|([^|]+))?")
+		local fg, bg = ANSI:match("([^|]+)|([^|]+)")
 		if not fg then fg = ANSI end
 		local c = consolecolors[fg]
 		local b = bgcolors[bg]
 		if not c then c = fg end
 		if bg and not b then b = bg end
+		if b then c = c..b end
 		io.write(c)
 	end
 	print(...)
