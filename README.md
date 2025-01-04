@@ -1,38 +1,93 @@
-## Debug Candy!
-
+# Debug Candy!
 A fun little implementation of some debug tools I like to use, now in convenient library form!
 
+<img src="https://github.com/user-attachments/assets/7f4d1d7c-2143-414e-9012-73be4e7dd330" width="500">
+
+For generating this text, see [Example 1](#Examples)
+
+  * [Installation](#Installation)
+  * [Latest Features](#Latest) - updated 01/04/2025
+  * [Functions](#Functions)
+  * [Arguments](#Arguments)
+  * [Customizing](#Customizing)
+  * [Examples](#Examples)
+  * [Some Notes](#Notes)
+  * [ToDo List](#TODO)
+
+## Installation
 * `require "debugcandy.lua"` will put the `ccandy` namespace into Global, putting all tools there. 
 * `require ("path.debugcandy.lua"):export(n)` will export all of the functions into the Global namespace with the optional `n` prefix.
-* Leaving `n` blank will use the prefix `_c_` to avoid overwriting common Lua and Love names like `error`
+* Leaving `n` blank will use the prefix `_c_` to avoid overwriting common Lua and Löve names like `error`
 
-<img src="https://github.com/user-attachments/assets/7f4d1d7c-2143-414e-9012-73be4e7dd330" width="600">
 
-**UPDATE:** As of 01/04/2025, sequential files are now collapsed into a "line path" so `[update.lua:100][update.lua:55][update.lua:2]` becomes `[update.lua:100:55:2]`. In addition, an optional global `CANDYPATHDEPTH` has been added. See below.
 
-`debug()`,`error()`, `warn()`, and `success()` all print the passed message (including if it's a table, which they will iterate and print), and trace back the command call for as many levels as `level` is passed.
+## Latest
+Last updated 01/04/2025
+  * Sequential files are now collapsed into a "line path" so `[update.lua:100][update.lua:55][update.lua:2]` becomes `[update.lua:100:55:2]`.
+  * New Customizations! All globals are now local to the library now too. (see [Customizations](#Customizations) )
+  * New Optional argument: `parseStart` that modifies how many lines of the stacktrace are ignored
+  * Most commands can now call a function if they find them in the `msg` (or `reminderList`) table. See [Example 2](#Examples) for an example of how to do this.
+  * backgrounds are now an option, although I have yet to play around with them to figure out what looks good as defaults. The default bgs are eyesores, so they are turned off by default.
 
-The global constants used are:
-  * `CANDYDEBUGMODE` : Used to activate `debug()`, `todo()`, and `remind()` to let users declutter the console space when just looking for more serious `error`s and `warn`ings
-  * `CANDYDEBUGBASELEVEL` : The default level of stacktracing that gets reported to the console. This comes in the form of `[data.lua:100][src.lua:10][main.lua:256]`, where the number is the line number the command was called from.
-  * `CANDYTODOEXPIRATION` : In days. `todo()` allows you to pass a date as the first entry, which gets compared with the current date using `os.time()` and, if it's been this many days or more, will give you a warning. At `days x 3` the warning goes from yellow to red.
-  * `CANDYPATHDEPTH` : if greater than 0, this will add the filepath for the filename itself, such as `[src/states/game.lua:100]` instead of simply showing `[game.lua:100]`
+## Functions
+  * `debug(msg,level,parseStart)`
+    * **<code style="color : blue">Default Blue</code>** Prints detailed information on every value including variable type and, if it finds a nested table, it will show how many indices, keys, the memory address, and the depth (recursion is still an issue for me, so it stops at 9 for now). Will **not** call functions, but instead show that the function is there and the addresss. See [Example 3](#Examples) for an example of `debug()` printing a table.
+  * `warn(msg,level,parseStart)`
+    * **<code style="color : cyan">Default Yellow</code>**. Takes a string or indiced table, will call functions as it finds them.
+  * `error(msg,level,parseStart)`
+    * **<code style="color : red">Default Red</code>**. Takes a string or indiced table, will call functions as it finds them.
+  * `stop(msg,level,parseStart)`
+    * **<code style="color : red">Default Red</code>**. Calls `ccandy.error()` and then uses Löve's inbuilt `error()` to stop the game completely. Lets you use the library's own `ccandy.error()` function, while retaining Löve's program-stopping feature of the builtin `error()`
+  * `todo(msg)`
+    * **<code style="color : cyan">Default Cyan</code>**. Generates a ToDo`[ ]` list from the indiced table. Does not accept `functions`. If it finds a date in format of `01/01/2025` it will compare it with `os.time()`. If the number of days is ` >= toDoExpiration` it will throw a warning. The warning is **<code style="color : cyan">warning color</code>** at first, then **<code style="color : red">error color</code>** at `days x 3`. Will interpret capital `X` at the beginning of a string as a checkmark on the item `[X]`. **Note:** will parse the first date it finds then treat subsequent datestrings as todolist items. It will otherwise discard the first date it finds after evaluating the expiration status.
+      * Since it basically is meant to be called with a table only, it is more [Lua-esque](http://lua-users.org/wiki/LuaStyleGuide) to call it like this: `todo{"01/01/2025","todo1","todo2","Xtodo3"}`
+  * `remind(setDate,remindDate,reminderList)`
+    * **<code style="color : yellow">Default Yellow</code>**. Like `todo{}` it uses `os.time()` to check the dates. Checks against `remindDate` and, if that date has passed, will print how many days it's been since `setDate` and then print the **indiced items of** `reminderList`. Will call both indiced and non-indiced functions, first calling the indiced ones then the non-indiced ones. It also prints a visually distinct header and footer, which can be set per [Customization](#Customization) below.
+  * `blank(msg,lines)`
+    * Prints blank newlines to the console, with an optional message. Can be called as `blank()`, `blank(lines)`, or `blank(msg,lines)`. If `lines` is empty, will default to 10 newlines.
 
-  More info on each function:
+## Arguments
+All arguments are optional. Using any function with no arguments will result in defaults being used no message being printed.
+  * `msg`
+    * An indiced table or a string which gets printed. `debug()` will print non-indiced keys, as well. Default just prints blank. If a function is found, most tools will call that function (see the functions list for details)
+  * `level`
+    * The level of files to parse back in the stacktrace. E.g. `[data.lua:10][src.lua:10]`. It attempts to avoid showing its own filename for obvious reasons. Default is `CANDYDEBUGBASELEVEL` below.
+  * `parseStart`
+    * How many files of the traceback are omitted in the output. You can usually leave this alone, as the code has been generally tweaked to avoid unnecessary info (such as showing that every function comes from `debugcandy.lua`. However, if you are including the library nested further than one or two additional files, you might want to use this. The default starts at `4` so tweak accordingly.
 
-  * `debug(msg,level)` - Prits blue to the console. Will print variable types and values of every item in the msg table (or just the msg variable if it's not a table), and if it finds a table nested it will print how many keys, indices, the memory address, and how deep the table goes (with limited functionality to avoid recursion - I'm still figuring that part out). All formatted to (mostly) line up neatly.
-  * An example of `debug()` printing a table:
-   <img src="https://github.com/user-attachments/assets/f927ca5b-0b22-4c09-9368-cd121e352f51" width="400">
+## Customizing
+All of these have default values that produce the results you see in the screenshots.
+  * Data Output Customizations:
+      * `ccandy.colorsOff` : turns all colors off. Will not affect already-printed outputs. False by default.
+      * `ccandy.debugOn`      : Used to activate `debug()`, `todo()`, and `remind()`
+      * `ccandy.baseLevel` : For if `level` is not passed
+      * `ccandy.pathDepth`      : If `>0`, this will add paths to the parsed stacktrace itself, e.g.: `[src/states/game.lua:100]`
+      * `ccandy.tabledepthlimit` : how far `debug()` will parse a nested table before stopping.
+      * `ccandy.toDoExpiration` : How many days can pass before `todo()` shows warnings
+  * Visual Customizations:
+      * `ccandy.reminderheader` and `ccandy.reminderfooter` : are printed before and after reminders to make them standout. They look like the screenshots by default.
+      * `ccandy.todotab` : how far indented the todolist is
+      * `ccandy.backgrounds` : defaults to false. If true, will use `ccandy.backgrounds` to print background colors to all options. Can be set individually, see `ccandy.bgcolors`
+      * `ccandy.colors` : are the colors printed by different functions. These are strings. Can also use ANSI escape codes, ex: `warn = "\x1B[31m"` this will make warnings print red instead of yellow. If you're familiar with these escape codes you can add things like underlines, bold, italics etc. to the output.
+        * `warn = "yellow"`
+        * `error = "red"`
+        * `debug = "blue"`
+        * `todo = "cyan"`
+        * `remind = "yellow"`
+        * `success = "green"`
+      * `ccandy.bgcolors` : Only used if `ccandy.backgrounds` is on. These are off by default. Set to nil or "" to turn off individual ones instead.
+        * `warn = "yellow"`
+        * `error = "red"`
+        * `debug = "blue"`
+        * `todo = "cyan"`
+        * `remind = "yellow"`
+        * `success = "green"`
+       
+        * 
+## Examples
 
-  * `warn(msg,level)` - Prints yellow to the console
-  * `error(msg,level)` - Prints red to the console.
-  * `stop(msg,level)` - Calls `ccandy.error(msg,level)` and then uses Love's inbuilt `error()` to stop the game completely. Lets you stop the program with a little more detailed readout.
-  * `todo{"DD/MM/YYYY","unchecked listitem 1","Xchecked listitem 2"}` - Prints Cyan to the console. Generates a ToDo`[ ]` list. The first entry is checked against the indicated format to determine if it is a date, and then compares with `os.time()` and `CANDYTODOEXPIRATION` in days to determine whether to throw a warning and whether that warning is yellow or red. Will interpret capital `X` at the beginning of a string as a checkmark on the item `[X]`
-  * `remind(setDate,remindDate,reminderList)` - Prints Yellow to the console. Like `todo{}` it uses `os.time()` to check the dates. Checks against `remindDate` and, if that date has passed, will print how many days it's been since `setDate` and then print the `reminderList`. `reminderList` can accept an arbitrary number of functions, and it will call those functions non-deterministically if it them. This way you can do something crazy like nest `todo{}` inside of it..
-  * `blank(msg,lines)` - Prints blank newlines to the console, with an optional message. Can be called as `blank()`, `blank(lines)`, or `blank(msg,lines)`. If `lines` is empty, will default to 10 newlines.
-
-  The code to generate the screenshot above is as follows:
- ```
+### Example 1.
+ ```lua
 _c_warn("A new console library is in town!")
 _c_blank(0)
 _c_debug{sup = "sup","you can debug a table and print it with a bunch of data",x=10,y=20,sheesh = "sheesh",isTrue=false}
@@ -49,7 +104,34 @@ _c_success()
 _c_blank("Also I thought it'd be nice to be able to blank the console (blank(n) just prints n or 10 blank lines")
 ```
 
+### Example 2.
+This type of function usage is called [functional programming](https://www.geeksforgeeks.org/functional-programming-paradigm/):
+```lua
+local function throwDebugError(bad_thing,level,parseLevel)
+     return function _c_debug(bad_thing,level,parseLevel) end
+end
+---somewhere in your code where you need a hard assertion:
+if bad_thing then
+    _c_stop{"bad_thing happened! Debug Output", throwDebugError(bad_thing,level,parseLevel)}
+end
+```
 
-## Customizing
-For now, only the header and footer of `remind()` can be edited but I'm working on getting it to the point where the colors can be picked. 
-`ccandy.reminderheader` and `ccandy.reminderfooter` are those variables. Leave them alone and they'll look like the screenshot.
+### Example 3.
+An example of `debug()` printing a table:
+
+<img src="https://github.com/user-attachments/assets/f927ca5b-0b22-4c09-9368-cd121e352f51" width="400">
+
+## Notes
+
+  * File parsing will remove spaces because the stack trace produces a lot of formatting, and debugcandy removes that in favor of its own. That said, if the filename has a space in it, that space will be removed. I don't personally plan to tweak this to "fix" this situation, because spaces are a pain in code files anyway so I never use them, and it's generally not recommended.
+  * Most of the time, I am attempting to follow  [Lua style recommendations](http://lua-users.org/wiki/LuaStyleGuide) for cleaner code. Please leave feedback if you use this and find any issues with the formatting!
+  * This is not a "live updating" debug tool, nor is it a visual GUI debug tool. There aren't plans for one either. It outputs a static console output, and is meant for during-development stages. Heavy use of these tools *will* affect game performance, so be sure to erase and comment out your uses of these tools when you're not needing them! (and turn off `CANDYDEBUGMODE`)
+  * This library *probably* won't dig into memory profiling. If and until it does, pick something from the [Awesome Löve](https://github.com/Löve2d-community/awesome-Löve2d) repo instead.
+
+## ToDo
+Planned for the future
+  * Play with background settings to produce defaults that look nice.
+  * Dig deeper into ANSI escape sequences to provide more shortcuts to those features.
+  * Improve recursion detection by `debug()` so `tableDepthLimit` can be expanded safely (I'm not sure the lib is doing it right).
+  * Document how `printC()` and `printCTable()` work. These are used internally but users could also access them directly.
+  * Memory usage statistics of tables in `debug()`? This might be out of scope for this library. Maybe just use a memory module from 
