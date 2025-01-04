@@ -123,7 +123,7 @@ An example of `debug()` printing a table:
 
   * File parsing will remove spaces because the stack trace produces a lot of formatting, and debugcandy removes that in favor of its own. That said, if the filename has a space in it, that space will be removed. I don't personally plan to tweak this to "fix" this situation, because spaces are a pain in code files anyway so I never use them, and it's generally not recommended.
   * Most of the time, I am attempting to follow  [Lua style recommendations](http://lua-users.org/wiki/LuaStyleGuide) for cleaner code. Please leave feedback if you use this and find any issues with the formatting!
-  * This is not a "live updating" debug tool, nor is it a visual GUI debug tool. There aren't plans for one either. It outputs a static console output, and is meant for during-development stages. Heavy use of these tools *will* affect game performance, so be sure to erase and comment out your uses of these tools when you're not needing them! (and turn off `CANDYDEBUGMODE`)
+  * This is not a "live updating" debug tool, nor is it a visual GUI debug tool. There aren't plans for one either. It outputs a static console output, and is meant for during-development stages. Heavy use of these tools *will* affect game performance, so be sure to erase and comment out your uses of these tools when you're not needing them! (and turn off `debugOn`)
   * This library *probably* won't dig into memory profiling. If and until it does, pick something from the [Awesome Löve](https://github.com/Löve2d-community/awesome-Löve2d) repo instead.
 
 ## ToDo
