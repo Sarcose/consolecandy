@@ -130,6 +130,7 @@ An example of `debug()` printing a table:
 Planned for the future
   * Example images or code for features that don't have examples
   * Play with background settings to produce defaults that look nice.
+    * On that note, it seems reasonable that an optional "swap" flag could be passed to flip bg/fg situationally
   * Dig deeper into ANSI escape sequences to provide more shortcuts to those features.
   * Improve recursion detection by `debug()` so `tableDepthLimit` can be expanded safely (I'm not sure the lib is doing it right).
   * Document how `printC()` and `printCTable()` work. These are used internally but users could also access them directly.
