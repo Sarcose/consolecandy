@@ -68,7 +68,7 @@ All of these have default values that produce the results you see in the screens
       * `ccandy.reminderheader` and `ccandy.reminderfooter` : are printed before and after reminders to make them standout. They look like the screenshots by default.
       * `ccandy.todotab` : how far indented the todolist is
       * `ccandy.backgrounds` : defaults to false. If true, will use `ccandy.backgrounds` to print background colors to all options. Can be set individually, see `ccandy.bgcolors`
-      * `ccandy.colors` : are the colors printed by different functions. These are strings. Can also use ANSI escape codes, ex: `warn = "\x1B[31m"` this will make warnings print red instead of yellow. If you're familiar with these escape codes you can add things like underlines, bold, italics etc. to the output.
+      * `ccandy.colors` : are the colors printed by different functions. These are strings. Can also use ANSI escape codes, ex: `warn = "\x1B[31m"` this will make warnings print red instead of yellow. If you're [familiar with these escape codes](https://gist.github.com/ConnerWill/d4b6c776b509add763e17f9f113fd25b) you can add things like underlines, bold, italics etc. to the output.
         * `warn = "yellow"`
         * `error = "red"`
         * `debug = "blue"`
@@ -76,12 +76,12 @@ All of these have default values that produce the results you see in the screens
         * `remind = "yellow"`
         * `success = "green"`
       * `ccandy.bgcolors` : Only used if `ccandy.backgrounds` is on. These are off by default. Set to nil or "" to turn off individual ones instead.
-        * `warn = "yellow"`
-        * `error = "red"`
-        * `debug = "blue"`
-        * `todo = "cyan"`
-        * `remind = "yellow"`
-        * `success = "green"`
+        * `warn = "red"`
+        * `error = "white"`
+        * `debug = "magenta"`
+        * `todo = "magenta"`
+        * `remind = "black"`
+        * `success = "white"`
 ## Examples
 
 ### Example 1.
