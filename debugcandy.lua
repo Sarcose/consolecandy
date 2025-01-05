@@ -9,7 +9,7 @@ local ccandy = {
 	reminderheader = "==========!!!=======REMINDER=======!!!========",
 	reminderfooter = "=========!!!=======================!!!========",
 	toDoTab = "   ",
-	backgrounds = true,
+	backgrounds = false,
 	tableDepthLimit = 9,
 	colors = {
 		warn = "yellow",
@@ -138,11 +138,13 @@ local function getDeepest(t, refs, deep)
 	--ccandy.debug("refs: "..tostring(refs),0)
 	return deep, refs
 end
-local function getSpacing(space, name)
+local function getSpacing(space, name, div)
 	space = space or 9 --the size of a type label
+	div = div or 1
 	name = tostring(name)
 	local spaces = ""
 	local diff = space - #name
+	diff = diff / div
 	for i = 1, diff do
 		spaces = spaces.." "
 	end
@@ -150,6 +152,7 @@ local function getSpacing(space, name)
 end
 local function inspect(i, refs)
 	local t = type(i)
+	local limit = ccandy.tableDepthLimit
 	t = "("..t..")"
 	local ret = ""
 	local symbol = "= "
@@ -268,14 +271,20 @@ function ccandy.debug(_,level,parseStart) -- print magenta to console, takes a s
 					if #k > longestname then longestname = #k end
 				end
 			end
+			if _._tableName then
+				p = p..cap
+				p = p..getSpacing(longestname,i,1.5).."Table Name: "..tostring(_._tableName)
+			end
 			for i=1, #_ do
 				p = p..cap
 				p = p..getSpacing(longestname,i)..tostring(i).." : "..inspect(_[i], refs)
 			end
 			for k,v in pairs(_) do
-				if not tonumber(k) then
-					p = p..cap
-					p = p..getSpacing(longestname,k)..k.." : "..inspect(v, refs)
+				if k ~= "_tableName" then
+					if not tonumber(k) then
+						p = p..cap
+						p = p..getSpacing(longestname,k)..k.." : "..inspect(v, refs)
+					end
 				end
 			end
 			p = p:match("^(.-)[,\r\n]?$")
@@ -412,7 +421,8 @@ end
 function ccandy.stop(_,level,parseStart) --print red to console then stop the program
 	parseStart = parseStart or 5
 	ccandy.error(_,level,parseStart)
-	error("Stopped by ccandy.stop()")
+	if type(_) == "table" then _ = _[1] end
+	error("Stopped by ccandy.stop(): ".._.." (console may have more info)")
 end
 function ccandy.error(_,level,parseStart) --print red to console, takes a string or table
     if type(_) ~= "table" then _ = {_} end
@@ -439,9 +449,9 @@ function ccandy.blank(msg,n)
 		p = p .. "\r\n"
 	end
 	if msg then ccandy.printC("green",tostring(msg)) end
-	print(p)
+	io.write(p)
 end
-function ccandy.printC(ANSI, ...)
+function ccandy.printC(ANSI, _)
 	if not ccandy.colorsOff then
 		local fg, bg = ANSI:match("([^|]+)|([^|]+)")
 		if not fg then fg = ANSI end
@@ -452,7 +462,8 @@ function ccandy.printC(ANSI, ...)
 		if b then c = c..b end
 		io.write(c)
 	end
-	print(...)
+	io.write(_)
+	io.write("\n")
 	io.write(resetANSI)
 	::skip::
 end
