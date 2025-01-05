@@ -307,7 +307,7 @@ function ccandy.todo(_) --ccandy.todo{"Update date","XChecked Step 1","Unchecked
 		local datefound,date,timePassed
 		for i=1, #_ do
 			local item = _[i]
-			if not dateFound then date, timePassed = compareDate(item) end
+			if not datefound then date, timePassed = compareDate(item) end
 			if date then
 				exTimePassed = timePassed
 				if timePassed >= ccandy.toDoExpiration then
@@ -356,6 +356,7 @@ function ccandy.remind(setdate,reminderdate,_)
 			local since = "A reminder was set on "..setdate.." "..timePassedSinceSet.." days ago!"
 			local reminder = ""
 			local post = ccandy.reminderfooter
+			ccandy.printCTable(ccandy.colors.warn,{heading, since})
 			if type(_) == "table" then
 				for i,v in ipairs(_) do
 					if type(v)=="string" then
@@ -364,13 +365,14 @@ function ccandy.remind(setdate,reminderdate,_)
 							reminder = reminder.."\r\n"
 						end
 					elseif type(v)=="function" then
-						_[i]()
+						v()
 					end
 				end
+			elseif type(_) == "function" then
+				_()
 			else
 				reminder = reminder.._
 			end
-			ccandy.printCTable(ccandy.colors.warn,{heading,since,reminder})
 			if type(_) == "table" then
 				for k,v in pairs(_) do
 					if type(k) ~= "number" then
@@ -380,6 +382,7 @@ function ccandy.remind(setdate,reminderdate,_)
 					end
 				end
 			end
+			ccandy.printC(ccandy.colors.warn,reminder)
 			ccandy.printC(getANSI("remind"),post)
 		end
 	end
@@ -463,7 +466,7 @@ function ccandy.printC(ANSI, _)
 		io.write(c)
 	end
 	io.write(_)
-	io.write("\n")
+	io.write("\r\n")
 	io.write(resetANSI)
 	::skip::
 end
