@@ -278,7 +278,7 @@ local function dump(value, curDepth, refs, indent)
    local nextIndent = indent .. "  "
 
    p = p .. indent .. open
-   -- formatting helper
+   -- formatting 
    local function addLine(key, valStr)
       p = p .. nextIndent .. tostring(key) .. " = " .. valStr .. ",\n"
    end
@@ -339,7 +339,7 @@ function ccandy.debug(_,level,parseStart,depth) -- print magenta to console, tak
    local header = getCallLine("DEBUG",level,parseStart)
    local body = dump(_, depth, nil, "")
    local msg = header .. body
-   msg = msg:match("^(.-)[,\r\n]?$")  -- keep your trailing cleanup
+   msg = msg:match("^(.-)[,\r\n]?$") 
 
    ccandy.printC(getANSI("debug"), msg)
    
