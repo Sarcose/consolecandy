@@ -1,5 +1,20 @@
-# Debug Candy for Löve!
-Colored console debug and development tools with various inspection features and customizations available. Its purpose is to quickly throw relevant info about what you're working on right into the console during runtime!
+# Console Candy for Löve!
+Colored console debug and development tools with various inspection features and customizations available. Its purpose is to quickly throw relevant info about what you're working on right into the console during runtime.
+
+### 03/20/26 Note:
+As of the above date the latest version I use in my engine has been pushed which is a big refactor. Some of the data in the below readme may be outdated. The following is the latest implementation guideline for consolecandy:
+
+  * `ccandy:export(n)` - export the whole thing into the global namespace with n prefix ("_c_" is defaulted if n is nil) <-- personally I've stopped using this and have been doing:
+    * `_G.console = require 'consolecandy'` thus commands in my codebase look like `console.debug(t)` for instance
+  * `ccandy.debug(t)` - This is the bread and butter of this library and may be all anyone wants to use. This has been worked on ad nauseum to become a powerful tableprinter. This will print an entire table to the console, tabbed for formatting, detecting recursion (kind of) and collapsing nested tables further than one layer. Checks tables for keys and considers them when it determines size. Collapsed tables are instead printed like this: `TABLENAME = (table)  [ addr:0x0119d9fb10   #len:0   keys:3   depth: > LIMIT (9) ],`. `Len` is the index length, `keys` is how many non-indexed values are in the table, `depth` is how deep the table goes. There are still some problems with recursion detection (I think after a certain self-referencing depth it fails to detect that it's recursing) so `tableDepthLimit` clamps the depth testing -- if you see `> LIMIT (#)` then it probably got looped into recursion.
+  * `ccandy.title(t)` - prints a
+    * `==============================================`
+    * `Dirty Separator`
+    * `==============================================`
+    * For quick and dirty console eyeballing. Centering is planned at some point.
+  * `todo`, `warn`, `error`, `stop`, `reminder` all work as below in the documentation still. They may be deprecated/removed from the module at some point. There was a reason behind all of them but as I've been developing the engine I use this in more, I've used these features much, much less. The most-used of these for me is `ccandy.warn()`
+
+
 
 <img src="https://github.com/user-attachments/assets/7f4d1d7c-2143-414e-9012-73be4e7dd330" width="500">
 
