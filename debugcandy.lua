@@ -1,10 +1,13 @@
+---@diagnostic disable: cast-local-type, assign-type-mismatch
 -- Customization options
-
+local newline = "\r\n"
 local ccandy = {
 	colorsOff = false,
 	debugOn = true,
+   debugLevel = 2,   --1 = warn and error, 2 = log, 3 = everything
 	baseLevel = 2,
 	pathDepth = 1,
+   tableDepth = 2,
 	toDoExpiration = 5,
 	reminderheader = "==========!!!=======REMINDER=======!!!========",
 	reminderfooter = "=========!!!=======================!!!========",
@@ -249,48 +252,97 @@ local function getANSI(name)	--getANSI todo is passed
 	end
 	return e
 end
-function ccandy.debug(_,level,parseStart) -- print magenta to console, takes a string or table. Only when debugOn is on.
-	if ccandy.debugOn then
-		local p = getCallLine("DEBUG",level,parseStart)
-		if type(_) ~= "table" then 
-			if type(_) == "string" then
-				p = p .. _		--if it's a string we don't bother with the inspection, just print it as a message
-			else
-				p = p ..inspect(_)
-			end
-		else
-			local cap = "\r\n  "
-			if _.horizontal then 
-				cap = "|" _.horizontal = nil 
-			end
-			local longestname = 0
-			local refs = {}
-			refs[tostring(_)] = true
-			for k,v in pairs(_) do
-				if type(k) == "string" then
-					if #k > longestname then longestname = #k end
-				end
-			end
-			if _._tableName then
-				p = p..cap
-				p = p..getSpacing(longestname,i,1.5).."Table Name: "..tostring(_._tableName)
-			end
-			for i=1, #_ do
-				p = p..cap
-				p = p..getSpacing(longestname,i)..tostring(i).." : "..inspect(_[i], refs)
-			end
-			for k,v in pairs(_) do
-				if k ~= "_tableName" then
-					if not tonumber(k) then
-						p = p..cap
-						p = p..getSpacing(longestname,k)..k.." : "..inspect(v, refs)
-					end
-				end
-			end
-			p = p:match("^(.-)[,\r\n]?$")
-		end
-		ccandy.printC(getANSI("debug"),p)
-	end
+
+local function dump(value, curDepth, refs, indent)
+   refs = refs or {}
+   indent = indent or ""
+   local open = "{\n"
+   local close = "}"
+   local p = ""
+   -- NON-TABLE OR DEPTH LIMIT
+   if type(value) ~= "table" or curDepth <= 0 then
+      if type(value) == "string" then
+         return p .. value
+      else
+         return p .. inspect(value)
+      end
+   end
+   -- cycle detection
+   local id = tostring(value)
+   if refs[id] then
+      return indent .. "<cycle " .. id .. ">"
+   end
+   refs[id] = true
+
+   local t = value
+   local nextIndent = indent .. "  "
+
+   p = p .. indent .. open
+   -- formatting helper
+   local function addLine(key, valStr)
+      p = p .. nextIndent .. tostring(key) .. " = " .. valStr .. ",\n"
+   end
+   -- numeric indices
+   for i = 1, #t do
+      local child = t[i]
+      addLine(i, dump(child, curDepth - 1, refs, nextIndent))
+   end
+   -- string keys
+   for k, v in pairs(t) do
+      if k ~= "_tableName" and not tonumber(k) then
+         addLine(k, dump(v, curDepth - 1, refs, nextIndent))
+      end
+   end
+   p = p .. indent .. close
+
+   return p
+end
+local function write(c)
+   if type(c) == "table" then
+      if not ccandy.RETURNSTRING then io.write(c:tostring()) end
+      return c:tostring() 
+   else
+      if not ccandy.RETURNSTRING then io.write(tostring(c)) end
+      return tostring(c)
+   end
+   
+end
+local function concat(...)
+   return table.tostring({...})
+end
+
+--== PARSING FUNCTION ==--
+
+
+
+local function parseArgs(...)
+   if select("#", ...) == 0 then return end
+   local a, b = select(1, ...)      -- or simply: local a, b = ...
+   process(a, b)
+   return parse(select(3, ...))
+end
+
+--== REPORTING TOOLS ==--
+
+--==== VISUAL TEMPLATES ====--
+function ccandy.title(_)
+   local h = "==============================\r\n"
+   local f = "\r\n=============================="
+   local msg = h .. tostring(_) .. f
+   ccandy.printC(getANSI("debug"),msg)
+
+end
+
+function ccandy.debug(_,level,parseStart,depth) -- print magenta to console, takes a string or table. Only when debugOn is on.
+   depth = depth or ccandy.tableDepth or 1--TODO: add better arg parsing to this
+	if not ccandy.debugOn then return end
+   local header = getCallLine("DEBUG",level,parseStart)
+   local body = dump(_, depth, nil, "")
+   local msg = header .. body
+   msg = msg:match("^(.-)[,\r\n]?$")  -- keep your trailing cleanup
+
+   ccandy.printC(getANSI("debug"), msg)
+   
 end
 function ccandy.todo(_) --ccandy.todo{"Update date","XChecked Step 1","Unchecked Step 2","Unchecked Step 3"}
 	local level = 1
@@ -424,7 +476,8 @@ end
 function ccandy.stop(_,level,parseStart) --print red to console then stop the program
 	parseStart = parseStart or 5
 	ccandy.error(_,level,parseStart)
-	if type(_) == "table" then _ = _[1] end
+   if type(_) ~= "table" then _ = {_} end
+	if type(_) == "table" then _ = tostring(_[1]) end
 	error("Stopped by ccandy.stop(): ".._.." (console may have more info)")
 end
 function ccandy.error(_,level,parseStart) --print red to console, takes a string or table
@@ -454,7 +507,14 @@ function ccandy.blank(msg,n)
 	if msg then ccandy.printC("green",tostring(msg)) end
 	io.write(p)
 end
+---TODO: put this in a proper log system, which prints logs using io in order to parse at a later time.
+function ccandy.log(...)
+   if ccandy.debugLevel < 2 then return end
+   debug(concat(...))
+end
+
 function ccandy.printC(ANSI, _)
+   local ret = ""
 	if not ccandy.colorsOff then
 		local fg, bg = ANSI:match("([^|]+)|([^|]+)")
 		if not fg then fg = ANSI end
@@ -463,13 +523,32 @@ function ccandy.printC(ANSI, _)
 		if not c then c = fg end
 		if bg and not b then b = bg end
 		if b then c = c..b end
-		io.write(c)
+		ret = ret .. write(c)
 	end
-	io.write(_)
-	io.write("\r\n")
-	io.write(resetANSI)
+	ret = ret .. write(_)
+	ret = ret .. write("\r\n")
+	ret = ret .. write(resetANSI)
+   ccandy.RETURNSTRING = false
 	::skip::
 end
+
+function ccandy._debug(...) 
+   ccandy.RETURNSTRING = true
+   ccandy.debug(...)
+end
+function ccandy._warn(...) 
+   ccandy.RETURNSTRING = true
+   ccandy.warn(...)
+end
+function ccandy._error(...) 
+   ccandy.RETURNSTRING = true
+   ccandy.error(...)
+end
+function ccandy._stop(...) 
+   ccandy.RETURNSTRING = true
+   ccandy.stop(...)
+end
+
 function ccandy.printCTable(cTable, sTable)	--print a table of strings with a table of colors, used in Todo list mainly
 	local onlyColor
 	if type(cTable) ~= "table" then onlyColor = cTable end
@@ -487,7 +566,7 @@ function ccandy:export(n)
 	local ignore = {export=true}
 	n = n or ""
 	for k,v in pairs(self) do
-		if not ignore[f] then
+		if not ignore[k] then
 			local f = n..k
 			_G[f] = v
 		end
