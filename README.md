@@ -20,6 +20,7 @@ As of the above date the latest version I use in my engine has been pushed which
 A quick tl;dr of most features in this library:
   * A lot of uses of these features is modular. Except for `debug`, most or all of the error message throwing methods accept a string, a table, or a function and will adapt to each. Thus you can pass complicated messages to the outputs.
   * All the colors are configurable. A lot of things like tabs are configurable. Please make an issue if any configurations don't work, because it's likely they were changed but the documentation not fixed.
+  * All methods print the filenames they came from, as well as the lines they were called from in code. They trace back so you can see how far back they go - using the stack to indicate the trace they were called from. This is configurable globally or per-call.
 
 ### Former Readme, some deprecated info
 
