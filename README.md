@@ -13,7 +13,8 @@ As of the above date the latest version I use in my engine has been pushed which
     * `Dirty Separator`
     * `==============================================`
     * For quick and dirty console eyeballing. Centering is planned at some point.
-  * `todo`, `warn`, `error`, `stop`, `reminder` all work as below in the documentation still. They may be deprecated/removed from the module at some point. There was a reason behind all of them but as I've been developing the engine I use this in more, I've used these features much, much less. The most-used of these for me is `ccandy.warn()`
+  * `todo`, `warn`, `error`, `stop`, `reminder` all work as below in the documentation still. They may be deprecated/removed from the module at some point. There was a reason behind all of them but as I've been developing the engine I use this in more, I've used these features much, much less. The most-used of these for me are `ccandy.warn()` and `ccandy.todo()`.
+    * `todo` lets you specify a "due by" date at which point it will change color to red. 
 
 A quick tl;dr of most features in this library:
   * A lot of uses of these features is modular. Except for `debug`, most or all of the error message throwing methods accept a string, a table, or a function and will adapt to each. Thus you can pass complicated messages to the outputs.
