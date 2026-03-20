@@ -14,7 +14,7 @@ As of the above date the latest version I use in my engine has been pushed which
     * For quick and dirty console eyeballing. Centering is planned at some point.
   * `todo`, `warn`, `error`, `stop`, `reminder` all work as below in the documentation still. They may be deprecated/removed from the module at some point. There was a reason behind all of them but as I've been developing the engine I use this in more, I've used these features much, much less. The most-used of these for me is `ccandy.warn()`
 
-
+### Former Readme, some deprecated info
 
 <img src="https://github.com/user-attachments/assets/7f4d1d7c-2143-414e-9012-73be4e7dd330" width="500">
 
