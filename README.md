@@ -7,6 +7,7 @@ As of the above date the latest version I use in my engine has been pushed which
   * `ccandy:export(n)` - export the whole thing into the global namespace with n prefix (`_c_` is defaulted if n is nil) <-- personally I've stopped using this and have been doing:
     * `_G.console = require 'consolecandy'` thus commands in my codebase look like `console.debug(t)` for instance
   * `ccandy.debug(t)` - This is the bread and butter of this library and may be all anyone wants to use. This has been worked on ad nauseum to become a powerful tableprinter. This will print an entire table to the console, tabbed for formatting, detecting recursion (kind of) and collapsing nested tables further than one layer. Checks tables for keys and considers them when it determines size. Collapsed tables are instead printed like this: `TABLENAME = (table)  [ addr:0x0119d9fb10   #len:0   keys:3   depth: > LIMIT (9) ],`. `Len` is the index length, `keys` is how many non-indexed values are in the table, `depth` is how deep the table goes. There are still some problems with recursion detection (I think after a certain self-referencing depth it fails to detect that it's recursing) so `tableDepthLimit` clamps the depth testing -- if you see `> LIMIT (#)` then it probably got looped into recursion.
+    * Also useful: with the exception of some userdata stuff and metatables, this will also specify the primitive types of all values found in a table
   * `ccandy.title(t)` - prints a
     * `==============================================`
     * `Dirty Separator`
